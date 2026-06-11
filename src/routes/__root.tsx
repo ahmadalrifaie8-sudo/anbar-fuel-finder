@@ -74,6 +74,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "منصة بانزين الأنبار" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "منصة بانزين الأنبار — توفر الوقود لحظياً" },
+      { name: "twitter:title", content: "منصة بانزين الأنبار — توفر الوقود لحظياً" },
+      { property: "og:description", content: "اعرف أين يتوفر البنزين والغاز والنفط الأبيض في محافظة الأنبار الآن، عبر خريطة لحظية للمحطات." },
+      { name: "twitter:description", content: "اعرف أين يتوفر البنزين والغاز والنفط الأبيض في محافظة الأنبار الآن، عبر خريطة لحظية للمحطات." },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
