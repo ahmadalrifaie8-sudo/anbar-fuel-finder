@@ -1,17 +1,19 @@
-// شريط لحظي متحرك بآخر تحديثات المحطات
+// شريط لحظي متحرك بآخر تحديثات المحطات — يتوقف عند اللمس أو فتح لوحة المحطة
 import type { FuelType, StationWithStatus } from "@/lib/stations";
 import { Radio } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 interface Props {
   stations: StationWithStatus[];
   fuelTypes: FuelType[];
+  paused?: boolean; // إيقاف خارجي (مثلاً عند فتح لوحة المحطة)
 }
 
-export function LiveTicker({ stations, fuelTypes }: Props) {
+export function LiveTicker({ stations, fuelTypes, paused = false }: Props) {
+  const [touching, setTouching] = useState(false);
+
   const items = useMemo(() => {
     const fuelName = (id: number) => fuelTypes.find((f) => f.id === id)?.name ?? "";
-    // آخر تحديثات حسب الزمن
     const rows: { station: string; fuel: string; available: boolean; crowd: string; time: number }[] = [];
     stations.forEach((s) => {
       s.statuses.forEach((st) => {
@@ -42,13 +44,30 @@ export function LiveTicker({ stations, fuelTypes }: Props) {
       </span>
     ));
 
+  const isPaused = paused || touching;
+
   return (
     <div className="glass-strong pointer-events-auto flex items-center gap-2 overflow-hidden rounded-2xl py-2 pr-3">
       <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-red-500/15 px-2.5 py-1 text-[10px] font-bold text-red-300">
         <Radio className="h-3 w-3 animate-pulse" /> مباشر
       </div>
-      <div className="relative flex-1 overflow-hidden" dir="ltr">
-        <div className="flex w-max animate-marquee whitespace-nowrap" dir="rtl">
+      <div
+        className="relative flex-1 overflow-hidden"
+        dir="ltr"
+        onTouchStart={() => setTouching(true)}
+        onTouchEnd={() => setTouching(false)}
+        onTouchCancel={() => setTouching(false)}
+        onMouseEnter={() => setTouching(true)}
+        onMouseLeave={() => setTouching(false)}
+      >
+        <div
+          className="flex w-max whitespace-nowrap"
+          dir="rtl"
+          style={{
+            animation: "marquee-rtl 60s linear infinite",
+            animationPlayState: isPaused ? "paused" : "running",
+          }}
+        >
           {renderItems("a")}
           {renderItems("b")}
         </div>
