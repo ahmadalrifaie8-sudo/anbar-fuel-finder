@@ -64,7 +64,7 @@ export function LiveTicker({ stations, fuelTypes, paused = false }: Props) {
           className="flex w-max whitespace-nowrap"
           dir="rtl"
           style={{
-            animation: "marquee-rtl 60s linear infinite",
+            animation: "marquee-ltr 90s linear infinite",
             animationPlayState: isPaused ? "paused" : "running",
           }}
         >
