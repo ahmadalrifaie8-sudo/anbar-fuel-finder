@@ -155,7 +155,7 @@ function HomePage() {
 
       {/* الشريط المتحرك السفلي */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <LiveTicker stations={filtered} fuelTypes={fuelTypes} />
+        <LiveTicker stations={filtered} fuelTypes={fuelTypes} paused={!!selected} />
       </div>
 
       {showCityModal && (
