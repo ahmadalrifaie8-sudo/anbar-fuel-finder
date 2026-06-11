@@ -60,10 +60,10 @@ export async function fetchStationBySlug(slug: string) {
     .eq("slug", slug)
     .maybeSingle();
   if (error) throw error;
-  if (!data) return null;
+  if (!data || !(data as any).id) return null;
   const { data: statuses } = await supabase
     .from("station_fuel_status")
     .select("*, fuel_types(name)")
-    .eq("station_id", (data as any).id);
+    .eq("station_id", (data as any).id as string);
   return { station: data, statuses: statuses ?? [] };
 }
