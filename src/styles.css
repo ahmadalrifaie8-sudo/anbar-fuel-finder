@@ -166,7 +166,7 @@
   100% { transform: translateX(-100%); }
 }
 @utility animate-marquee {
-  animation: marquee-rtl 60s linear infinite;
+  animation: marquee-rtl 120s linear infinite;
 }
 
 /* === تسمية اسم المحطة فوق الدبوس === */
