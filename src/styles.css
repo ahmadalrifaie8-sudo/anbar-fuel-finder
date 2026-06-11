@@ -161,12 +161,12 @@
 }
 
 /* === الشريط المتحرك (Marquee) === */
-@keyframes marquee-rtl {
-  0% { transform: translateX(100%); }
-  100% { transform: translateX(-100%); }
+@keyframes marquee-ltr {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 @utility animate-marquee {
-  animation: marquee-rtl 120s linear infinite;
+  animation: marquee-ltr 90s linear infinite;
 }
 
 /* === تسمية اسم المحطة فوق الدبوس === */
