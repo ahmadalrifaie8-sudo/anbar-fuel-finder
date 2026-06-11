@@ -258,21 +258,39 @@ function StationCard({ station, onChange }: { station: MyStation; onChange: () =
               const st = statuses.find((s) => s.fuel_type_id === ft.id);
               const on = !!st?.is_available;
               return (
-                <div key={ft.id} className="flex items-center justify-between rounded-xl bg-secondary/40 p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{ft.name}</span>
-                    {savedId === ft.id && <span className="flex items-center gap-1 text-[10px] text-primary"><Check className="h-3 w-3" /> محفوظ</span>}
-                    {st && <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(st.last_updated), { addSuffix: true, locale: ar })}</span>}
+                <div key={ft.id} className="rounded-xl bg-secondary/40 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{ft.name}</span>
+                      {savedId === ft.id && <span className="flex items-center gap-1 text-[10px] text-primary"><Check className="h-3 w-3" /> محفوظ</span>}
+                      {st && <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(st.last_updated), { addSuffix: true, locale: ar })}</span>}
+                    </div>
+                    <button
+                      onClick={() => toggle(ft.id, on)}
+                      disabled={savingId === ft.id}
+                      role="switch"
+                      aria-checked={on}
+                      className={`relative h-7 w-14 shrink-0 rounded-full transition ${on ? "bg-primary shadow-[var(--shadow-glow-primary)]" : "bg-white/15"}`}
+                    >
+                      <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${on ? "right-0.5" : "right-7"}`} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => toggle(ft.id, on)}
-                    disabled={savingId === ft.id}
-                    role="switch"
-                    aria-checked={on}
-                    className={`relative h-7 w-14 shrink-0 rounded-full transition ${on ? "bg-primary shadow-[var(--shadow-glow-primary)]" : "bg-white/15"}`}
-                  >
-                    <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${on ? "right-0.5" : "right-7"}`} />
-                  </button>
+                  {/* اختيار مستوى الازدحام */}
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">الازدحام:</span>
+                    {CROWD_LEVELS.map((lvl) => {
+                      const active = (st?.crowd_level ?? "خفيف") === lvl;
+                      return (
+                        <button
+                          key={lvl}
+                          onClick={() => setCrowd(ft.id, lvl, on)}
+                          className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold transition ${active ? CROWD_BTN[lvl] : "border-border bg-transparent text-muted-foreground hover:bg-secondary/60"}`}
+                        >
+                          {lvl}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
