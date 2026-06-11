@@ -32,6 +32,62 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  // ترجمة رسائل الخطأ من Supabase إلى رسائل عربية واضحة مع خطوات الإصلاح
+  const translateAuthError = (err: any): { title: string; hint?: string } => {
+    const code = (err?.code ?? err?.error_code ?? "").toString().toLowerCase();
+    const msg = (err?.message ?? "").toString().toLowerCase();
+
+    if (code === "invalid_credentials" || msg.includes("invalid login credentials")) {
+      return {
+        title: "بيانات الدخول غير صحيحة",
+        hint: "تأكّد من البريد وكلمة المرور. إن نسيت كلمة المرور، تواصل مع مدير المنصة لإعادة تعيينها.",
+      };
+    }
+    if (code === "email_not_confirmed" || msg.includes("email not confirmed")) {
+      return {
+        title: "البريد الإلكتروني غير مُؤكَّد بعد",
+        hint: "افتح بريدك واضغط رابط التأكيد الذي أرسلناه، ثم أعد المحاولة.",
+      };
+    }
+    if (code === "user_already_exists" || msg.includes("already registered") || msg.includes("user already")) {
+      return {
+        title: "هذا البريد مُسجَّل مسبقاً",
+        hint: "بدّل إلى وضع «دخول» وسجّل دخولك بكلمة المرور الخاصة بك.",
+      };
+    }
+    if (code === "weak_password" || msg.includes("password should be at least") || msg.includes("weak password")) {
+      return {
+        title: "كلمة المرور ضعيفة",
+        hint: "استخدم 6 أحرف على الأقل، ويُفضَّل خلط أحرف وأرقام ورموز.",
+      };
+    }
+    if (code === "over_request_rate_limit" || msg.includes("rate limit") || msg.includes("too many")) {
+      return {
+        title: "محاولات كثيرة خلال وقت قصير",
+        hint: "انتظر دقيقة واحدة ثم أعد المحاولة.",
+      };
+    }
+    if (code === "user_banned" || msg.includes("banned")) {
+      return {
+        title: "الحساب موقوف",
+        hint: "تواصل مع مدير المنصة لمراجعة حالة الحساب.",
+      };
+    }
+    if (msg.includes("network") || msg.includes("failed to fetch")) {
+      return {
+        title: "تعذّر الاتصال بالخادم",
+        hint: "تحقّق من اتصال الإنترنت ثم أعد المحاولة.",
+      };
+    }
+    if (msg.includes("invalid email") || code === "validation_failed") {
+      return {
+        title: "صيغة البريد الإلكتروني غير صحيحة",
+        hint: "أدخل بريداً صحيحاً مثل name@example.com.",
+      };
+    }
+    return { title: err?.message ?? "حدث خطأ غير متوقّع", hint: "أعد المحاولة، وإن استمرّت المشكلة تواصل مع الدعم." };
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -53,7 +109,8 @@ function AuthPage() {
       }
       navigate({ to: "/dashboard" });
     } catch (err: any) {
-      toast.error(err?.message ?? "حدث خطأ");
+      const { title, hint } = translateAuthError(err);
+      toast.error(title, { description: hint });
     } finally {
       setLoading(false);
     }
