@@ -1,9 +1,11 @@
 // الورقة السفلية لتفاصيل المحطة
 import type { FuelType, StationWithStatus } from "@/lib/stations";
-import { Navigation, Share2, X, Check, Ban } from "lucide-react";
+import { CROWD_COLOR, incrementStationVisits } from "@/lib/stations";
+import { Navigation, Share2, X, Check, Ban, MapPin, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
 
 interface Props {
   station: StationWithStatus;
@@ -12,6 +14,18 @@ interface Props {
 }
 
 export function StationSheet({ station, fuelTypes, onClose }: Props) {
+  const [visitors, setVisitors] = useState<number>(station.visitor_count ?? 0);
+
+  // زيادة عداد زيارات المنصة عند فتح البطاقة (مرة واحدة لكل محطة لكل جلسة)
+  useEffect(() => {
+    const key = `visited:${station.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    incrementStationVisits(station.id).then((n) => {
+      if (typeof n === "number") setVisitors(n);
+    });
+  }, [station.id]);
+
   const handleNavigate = () => {
     const url = `https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lng}`;
     window.open(url, "_blank");
@@ -29,6 +43,9 @@ export function StationSheet({ station, fuelTypes, onClose }: Props) {
     } catch { /* تم الإلغاء */ }
   };
 
+  // أعلى مستوى ازدحام بين أنواع الوقود المتوفرة
+  const topCrowd = station.statuses.find((s) => s.is_available)?.crowd_level ?? "خفيف";
+
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={onClose} />
@@ -39,21 +56,43 @@ export function StationSheet({ station, fuelTypes, onClose }: Props) {
         </button>
 
         <h2 className="pl-10 text-lg font-bold">{station.name}</h2>
-        <p className="mt-1 text-xs text-muted-foreground">حالة الوقود الحالية</p>
+        {station.address && (
+          <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3" /> {station.address}
+          </p>
+        )}
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
+        {/* مؤشرات رئيسية */}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${CROWD_COLOR[topCrowd]}`}>
+            الازدحام: {topCrowd}
+          </span>
+          <span className="flex items-center gap-1 rounded-full border border-border bg-secondary/40 px-3 py-1 text-[11px] font-semibold">
+            <Users className="h-3 w-3" /> {visitors.toLocaleString("ar")} زائر
+          </span>
+        </div>
+
+        <p className="mt-4 text-[11px] font-semibold text-muted-foreground">المنتوج المتوفر</p>
+        <div className="mt-1 grid grid-cols-2 gap-2">
           {fuelTypes.map((ft) => {
             const st = station.statuses.find((s) => s.fuel_type_id === ft.id);
             const available = !!st?.is_available;
             return (
-              <div key={ft.id} className={`flex items-center gap-2 rounded-xl border p-3 ${available ? "border-primary/40 bg-primary/10" : "border-destructive/30 bg-destructive/10"}`}>
-                {available ? <Check className="h-5 w-5 text-primary" /> : <Ban className="h-5 w-5 text-destructive" />}
-                <div className="leading-tight">
-                  <div className="text-sm font-bold">{ft.name}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {st ? formatDistanceToNow(new Date(st.last_updated), { addSuffix: true, locale: ar }) : "—"}
+              <div key={ft.id} className={`rounded-xl border p-3 ${available ? "border-primary/40 bg-primary/10" : "border-destructive/30 bg-destructive/10"}`}>
+                <div className="flex items-center gap-2">
+                  {available ? <Check className="h-5 w-5 text-primary" /> : <Ban className="h-5 w-5 text-destructive" />}
+                  <div className="leading-tight">
+                    <div className="text-sm font-bold">{ft.name}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {st ? formatDistanceToNow(new Date(st.last_updated), { addSuffix: true, locale: ar }) : "—"}
+                    </div>
                   </div>
                 </div>
+                {st && (
+                  <div className={`mt-2 inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ${CROWD_COLOR[st.crowd_level]}`}>
+                    ازدحام {st.crowd_level}
+                  </div>
+                )}
               </div>
             );
           })}
