@@ -1,30 +1,59 @@
-// صفحة المصادقة - دخول / تسجيل
+// صفحة المصادقة - دخول / تسجيل مع إنشاء محطة في خطوة واحدة
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchCities } from "@/lib/stations";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "دخول مدير المحطة — بانزين الأنبار" },
-      { name: "description", content: "تسجيل دخول مدراء المحطات لتحديث توفر الوقود لحظياً." },
+      { title: "دخول صاحب المحطة — بانزين الأنبار" },
+      { name: "description", content: "تسجيل دخول أصحاب المحطات لتحديث توفر الوقود لحظياً." },
       { name: "robots", content: "noindex" },
     ],
   }),
   component: AuthPage,
 });
 
+const translateAuthError = (err: any): { title: string; hint?: string } => {
+  const code = (err?.code ?? err?.error_code ?? "").toString().toLowerCase();
+  const msg = (err?.message ?? "").toString().toLowerCase();
+  if (code === "invalid_credentials" || msg.includes("invalid login credentials"))
+    return { title: "بيانات الدخول غير صحيحة", hint: "تأكّد من البريد وكلمة المرور." };
+  if (code === "email_not_confirmed" || msg.includes("email not confirmed"))
+    return { title: "البريد الإلكتروني غير مُؤكَّد بعد", hint: "افتح بريدك واضغط رابط التأكيد." };
+  if (code === "user_already_exists" || msg.includes("already registered") || msg.includes("user already"))
+    return { title: "هذا البريد مُسجَّل مسبقاً", hint: "بدّل إلى وضع «دخول»." };
+  if (code === "weak_password" || msg.includes("password should be at least") || msg.includes("weak password"))
+    return { title: "كلمة المرور ضعيفة", hint: "6 أحرف على الأقل." };
+  if (code === "over_request_rate_limit" || msg.includes("rate limit") || msg.includes("too many"))
+    return { title: "محاولات كثيرة", hint: "انتظر دقيقة ثم أعد المحاولة." };
+  if (msg.includes("network") || msg.includes("failed to fetch"))
+    return { title: "تعذّر الاتصال بالخادم", hint: "تحقّق من الإنترنت." };
+  return { title: err?.message ?? "حدث خطأ غير متوقّع" };
+};
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [loading, setLoading] = useState(false);
+  // shared
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  // signup
+  const [ownerName, setOwnerName] = useState("");
+  const [stationName, setStationName] = useState("");
   const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState("");
+  const [cityId, setCityId] = useState("");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+
+  const { data: cities = [] } = useQuery({ queryKey: ["cities"], queryFn: fetchCities });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -32,60 +61,11 @@ function AuthPage() {
     });
   }, [navigate]);
 
-  // ترجمة رسائل الخطأ من Supabase إلى رسائل عربية واضحة مع خطوات الإصلاح
-  const translateAuthError = (err: any): { title: string; hint?: string } => {
-    const code = (err?.code ?? err?.error_code ?? "").toString().toLowerCase();
-    const msg = (err?.message ?? "").toString().toLowerCase();
-
-    if (code === "invalid_credentials" || msg.includes("invalid login credentials")) {
-      return {
-        title: "بيانات الدخول غير صحيحة",
-        hint: "تأكّد من البريد وكلمة المرور. إن نسيت كلمة المرور، تواصل مع مدير المنصة لإعادة تعيينها.",
-      };
-    }
-    if (code === "email_not_confirmed" || msg.includes("email not confirmed")) {
-      return {
-        title: "البريد الإلكتروني غير مُؤكَّد بعد",
-        hint: "افتح بريدك واضغط رابط التأكيد الذي أرسلناه، ثم أعد المحاولة.",
-      };
-    }
-    if (code === "user_already_exists" || msg.includes("already registered") || msg.includes("user already")) {
-      return {
-        title: "هذا البريد مُسجَّل مسبقاً",
-        hint: "بدّل إلى وضع «دخول» وسجّل دخولك بكلمة المرور الخاصة بك.",
-      };
-    }
-    if (code === "weak_password" || msg.includes("password should be at least") || msg.includes("weak password")) {
-      return {
-        title: "كلمة المرور ضعيفة",
-        hint: "استخدم 6 أحرف على الأقل، ويُفضَّل خلط أحرف وأرقام ورموز.",
-      };
-    }
-    if (code === "over_request_rate_limit" || msg.includes("rate limit") || msg.includes("too many")) {
-      return {
-        title: "محاولات كثيرة خلال وقت قصير",
-        hint: "انتظر دقيقة واحدة ثم أعد المحاولة.",
-      };
-    }
-    if (code === "user_banned" || msg.includes("banned")) {
-      return {
-        title: "الحساب موقوف",
-        hint: "تواصل مع مدير المنصة لمراجعة حالة الحساب.",
-      };
-    }
-    if (msg.includes("network") || msg.includes("failed to fetch")) {
-      return {
-        title: "تعذّر الاتصال بالخادم",
-        hint: "تحقّق من اتصال الإنترنت ثم أعد المحاولة.",
-      };
-    }
-    if (msg.includes("invalid email") || code === "validation_failed") {
-      return {
-        title: "صيغة البريد الإلكتروني غير صحيحة",
-        hint: "أدخل بريداً صحيحاً مثل name@example.com.",
-      };
-    }
-    return { title: err?.message ?? "حدث خطأ غير متوقّع", hint: "أعد المحاولة، وإن استمرّت المشكلة تواصل مع الدعم." };
+  const useMyLocation = () => {
+    navigator.geolocation.getCurrentPosition(
+      (p) => { setLat(p.coords.latitude.toFixed(6)); setLng(p.coords.longitude.toFixed(6)); },
+      () => toast.error("تعذر الحصول على الموقع"),
+    );
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -93,16 +73,27 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { name, phone },
-          },
+          options: { emailRedirectTo: window.location.origin, data: { name: ownerName, phone } },
         });
         if (error) throw error;
-        toast.success("تم إنشاء الحساب بنجاح");
+        const user = signUpData.user;
+        if (!user) throw new Error("لم يتم إنشاء الحساب");
+        // create the station — slug auto-generated by DB trigger from stationName
+        const { error: insErr } = await supabase.from("stations").insert({
+          owner_id: user.id,
+          city_id: cityId,
+          name: stationName,
+          address,
+          phone,
+          slug: "",
+          location: `SRID=4326;POINT(${lng} ${lat})` as any,
+          status: "Pending",
+        });
+        if (insErr) throw insErr;
+        toast.success("تم إنشاء حسابك وإرسال محطتك للمراجعة");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -121,19 +112,37 @@ function AuthPage() {
       <div className="glass-strong w-full max-w-md rounded-3xl p-6 shadow-2xl">
         <div className="flex justify-center"><Logo /></div>
         <h1 className="mt-6 text-center text-xl font-bold">
-          {mode === "login" ? "دخول مدير المحطة" : "إنشاء حساب محطة جديد"}
+          {mode === "login" ? "دخول صاحب المحطة" : "تسجيل محطة جديدة"}
         </h1>
         <p className="mt-1 text-center text-xs text-muted-foreground">
-          {mode === "login" ? "أدخل بيانات حسابك لإدارة محطتك" : "سجّل لإضافة محطتك على المنصة"}
+          {mode === "login" ? "أدخل بيانات حسابك لإدارة محطتك" : "سجّل حسابك ومحطتك بخطوة واحدة"}
         </p>
 
         <form onSubmit={submit} className="mt-6 space-y-3">
           {mode === "signup" && (
             <>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم الكامل"
+              <input required value={ownerName} onChange={(e) => setOwnerName(e.target.value)} placeholder="اسمك الكامل"
                 className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
-              <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الهاتف" type="tel"
+              <input required value={stationName} onChange={(e) => setStationName(e.target.value)} placeholder="اسم المحطة (بالعربي)"
                 className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+              <select required value={cityId} onChange={(e) => setCityId(e.target.value)}
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary">
+                <option value="">اختر المدينة</option>
+                {cities.map((c) => <option key={c.id} value={c.id}>{c.name_ar}</option>)}
+              </select>
+              <input required value={address} onChange={(e) => setAddress(e.target.value)} placeholder="العنوان (مثال: شارع 20)"
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+              <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم هاتف المحطة" type="tel" dir="ltr"
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+              <div className="grid grid-cols-2 gap-2">
+                <input required value={lat} onChange={(e) => setLat(e.target.value)} placeholder="خط العرض" dir="ltr"
+                  className="rounded-xl border border-border bg-input px-3 py-3 text-sm outline-none" />
+                <input required value={lng} onChange={(e) => setLng(e.target.value)} placeholder="خط الطول" dir="ltr"
+                  className="rounded-xl border border-border bg-input px-3 py-3 text-sm outline-none" />
+              </div>
+              <button type="button" onClick={useMyLocation} className="flex w-full items-center justify-center gap-2 rounded-xl border border-border py-2 text-xs">
+                <MapPin className="h-3 w-3" /> استخدم موقعي الحالي
+              </button>
             </>
           )}
           <input required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="البريد الإلكتروني" type="email" dir="ltr"
@@ -143,13 +152,13 @@ function AuthPage() {
 
           <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-primary-foreground shadow-[var(--shadow-glow-primary)] transition active:scale-95 disabled:opacity-50">
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {mode === "login" ? "دخول" : "إنشاء حساب"}
+            {mode === "login" ? "دخول" : "إنشاء حساب ومحطة"}
           </button>
         </form>
 
         <button onClick={() => setMode(mode === "login" ? "signup" : "login")}
           className="mt-4 w-full text-center text-xs text-muted-foreground hover:text-foreground">
-          {mode === "login" ? "ليس لديك حساب؟ سجّل محطتك" : "لديك حساب بالفعل؟ سجّل دخول"}
+          {mode === "login" ? "ليس لديك حساب؟ سجّل محطتك" : "لديك حساب؟ سجّل الدخول"}
         </button>
       </div>
     </main>
