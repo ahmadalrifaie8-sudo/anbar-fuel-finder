@@ -78,16 +78,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "منصة بانزين الأنبار — توفر الوقود لحظياً" },
       { property: "og:description", content: "اعرف أين يتوفر البنزين والغاز والنفط الأبيض في محافظة الأنبار الآن، عبر خريطة لحظية للمحطات." },
       { name: "twitter:description", content: "اعرف أين يتوفر البنزين والغاز والنفط الأبيض في محافظة الأنبار الآن، عبر خريطة لحظية للمحطات." },
-      { name: "mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "بانزين الأنبار" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f820863-7338-4e92-a41f-bc97c96d1c37/id-preview-08fd4798--185394dd-8fb9-4567-9470-864b5da2fe36.lovable.app-1781146677784.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8f820863-7338-4e92-a41f-bc97c96d1c37/id-preview-08fd4798--185394dd-8fb9-4567-9470-864b5da2fe36.lovable.app-1781146677784.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "manifest", href: "/manifest.json" },
-      { rel: "icon", href: "/ban.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" },
@@ -104,8 +99,6 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="ar" dir="rtl">
       <head>
         <HeadContent />
-        {/* CSS مكتبة الخريطة — يُحقن هنا لتجنب مشكلة Tailwind v4 مع node_modules */}
-        <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" />
       </head>
       <body>
         {children}
