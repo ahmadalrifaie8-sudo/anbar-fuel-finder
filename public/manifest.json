@@ -1,0 +1,53 @@
+{
+  "name": "منصة بانزين الأنبار",
+  "short_name": "بانزين الأنبار",
+  "description": "خريطة لحظية لمحطات الوقود في محافظة الأنبار — توفر الوقود ومستوى الازدحام",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0f1a",
+  "theme_color": "#0a0f1a",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["utilities", "navigation", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "الخريطة العامة",
+      "url": "/",
+      "description": "خريطة محطات الوقود في الأنبار"
+    },
+    {
+      "name": "لوحة المحطة",
+      "url": "/dashboard",
+      "description": "إدارة بيانات محطتك"
+    }
+  ]
+}

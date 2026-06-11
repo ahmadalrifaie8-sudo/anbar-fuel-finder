@@ -12,6 +12,22 @@ export type FuelStatus = {
   last_updated: string;
 };
 
+export type DaySchedule = { open: boolean; from: string; to: string };
+export type WorkingHours = Record<string, DaySchedule>;
+
+export const DAYS = [
+  { key: "saturday", label: "السبت" },
+  { key: "sunday",   label: "الأحد" },
+  { key: "monday",   label: "الاثنين" },
+  { key: "tuesday",  label: "الثلاثاء" },
+  { key: "wednesday",label: "الأربعاء" },
+  { key: "thursday", label: "الخميس" },
+  { key: "friday",   label: "الجمعة" },
+] as const;
+
+export const defaultWorkingHours = (): WorkingHours =>
+  Object.fromEntries(DAYS.map(({ key }) => [key, { open: true, from: "08:00", to: "22:00" }]));
+
 export type StationWithStatus = {
   id: string;
   name: string;
@@ -23,6 +39,7 @@ export type StationWithStatus = {
   visitor_count: number;
   services: Record<string, unknown>;
   status: string;
+  working_hours: WorkingHours;
   statuses: FuelStatus[];
 };
 
@@ -41,7 +58,7 @@ export async function fetchCities(): Promise<City[]> {
 export async function fetchActiveStations(): Promise<StationWithStatus[]> {
   const { data: stations, error } = await supabase
     .from("stations_public")
-    .select("id, name, slug, city_id, lat, lng, services, status, address, visitor_count");
+    .select("id, name, slug, city_id, lat, lng, services, status, address, visitor_count, working_hours");
   if (error) throw error;
   const rows = (stations ?? []).filter((s): s is NonNullable<typeof s> & { id: string } => !!s?.id);
   const ids = rows.map((s) => s.id as string);

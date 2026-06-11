@@ -1,9 +1,9 @@
-// صفحة المشاركة العامة للمحطة /s/$slug — مع المنتجات وزر بلاغ
+// صفحة المشاركة العامة للمحطة /s/$slug — مع المنتجات وزر بلاغ وأوقات العمل
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { fetchStationBySlug, submitComplaint } from "@/lib/stations";
+import { fetchStationBySlug, submitComplaint, DAYS } from "@/lib/stations";
 import { Logo } from "@/components/Logo";
-import { Check, Ban, Navigation, ArrowRight, AlertOctagon, Phone, Loader2 } from "lucide-react";
+import { Check, Ban, Navigation, ArrowRight, AlertOctagon, Phone, Loader2, Clock, CheckCircle2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
@@ -98,6 +98,11 @@ function SharePage() {
             <Navigation className="h-4 w-4" /> توجيه عبر خرائط جوجل
           </button>
 
+          {/* أوقات العمل */}
+          {s.working_hours && Object.keys(s.working_hours).length > 0 && (
+            <WorkingHoursSection hours={s.working_hours} />
+          )}
+
           <button onClick={() => setReportOpen(true)} className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 py-2.5 text-xs font-bold text-destructive">
             <AlertOctagon className="h-3.5 w-3.5" /> إبلاغ عن مخالفة
           </button>
@@ -109,19 +114,58 @@ function SharePage() {
   );
 }
 
+function WorkingHoursSection({ hours }: { hours: Record<string, any> }) {
+  const DAY_KEYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const todayKey = DAY_KEYS[new Date().getDay()];
+  const today = hours[todayKey];
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="mt-4 rounded-2xl border border-border bg-secondary/20 p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-2 text-sm font-bold"><Clock className="h-4 w-4" /> أوقات العمل</h2>
+        <button onClick={() => setExpanded(!expanded)} className="text-[10px] text-primary underline">
+          {expanded ? "إخفاء" : "عرض الأسبوع"}
+        </button>
+      </div>
+      {today && (
+        <div className={`mt-2 flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold ${today.open ? "bg-primary/10 text-primary" : "bg-secondary/40 text-muted-foreground"}`}>
+          <span className={`h-2 w-2 rounded-full ${today.open ? "bg-primary animate-pulse" : "bg-muted-foreground"}`} />
+          اليوم: {today.open ? `مفتوح ${today.from} — ${today.to}` : "مغلق"}
+        </div>
+      )}
+      {expanded && (
+        <div className="mt-2 space-y-1">
+          {DAYS.map(({ key, label }) => {
+            const d = hours[key];
+            return (
+              <div key={key} className={`flex items-center justify-between rounded-lg px-3 py-1.5 text-xs ${key === todayKey ? "bg-primary/10 font-bold text-primary" : ""}`}>
+                <span>{label}</span>
+                <span className={d?.open ? "text-foreground" : "text-muted-foreground"}>
+                  {d ? (d.open ? `${d.from} — ${d.to}` : "مغلق") : "—"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReportDialog({ stationId, onClose }: { stationId: string; onClose: () => void }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await submitComplaint({ station_id: stationId, reporter_name: name || undefined, reporter_phone: phone, reason });
-      toast.success("تم إرسال البلاغ — سيراجعه فريق الإدارة");
-      onClose();
+      setSubmitted(true);
     } catch (err: any) {
       toast.error(err?.message ?? "تعذّر الإرسال");
     } finally { setLoading(false); }
@@ -131,22 +175,40 @@ function ReportDialog({ stationId, onClose }: { stationId: string; onClose: () =
     <>
       <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="glass-strong fixed inset-x-4 top-1/2 z-50 mx-auto max-w-md -translate-y-1/2 rounded-3xl p-6 md:left-1/2 md:right-auto md:-translate-x-1/2">
-        <h2 className="text-lg font-bold">إبلاغ عن مخالفة</h2>
-        <p className="mt-1 text-xs text-muted-foreground">إذا وصلت ولم تجد ما هو معلن، أرسل بلاغك لفريق الإدارة.</p>
-        <form onSubmit={submit} className="mt-4 space-y-3">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="اسمك (اختياري)"
-            className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none" />
-          <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم هاتفك للتواصل" type="tel" dir="ltr" minLength={6}
-            className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none" />
-          <textarea required value={reason} onChange={(e) => setReason(e.target.value)} placeholder="ما المخالفة؟ (مثلاً: المعلن أن البنزين متوفر لكنه غير موجود)" rows={4} minLength={5} maxLength={1000}
-            className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none" />
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border py-3 text-sm">إلغاء</button>
-            <button disabled={loading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground">
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />} إرسال البلاغ
-            </button>
+        {submitted ? (
+          <div className="text-center">
+            <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-primary" />
+            <h2 className="text-lg font-bold">تم إرسال بلاغك</h2>
+            <p className="mt-2 text-xs text-muted-foreground">سيقوم فريقنا بمراجعة البلاغ والتواصل معك في أقرب وقت.</p>
+            <div className="mt-4 rounded-xl bg-secondary/40 p-3">
+              <p className="text-xs font-bold text-muted-foreground">حالة البلاغ</p>
+              <div className="mt-1 flex items-center justify-center gap-2">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-yellow-400" />
+                <span className="text-xs font-semibold text-yellow-400">قيد المراجعة</span>
+              </div>
+            </div>
+            <button onClick={onClose} className="mt-4 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground">إغلاق</button>
           </div>
-        </form>
+        ) : (
+          <>
+            <h2 className="text-lg font-bold">إبلاغ عن مخالفة</h2>
+            <p className="mt-1 text-xs text-muted-foreground">إذا وصلت ولم تجد ما هو معلن، أرسل بلاغك لفريق الإدارة.</p>
+            <form onSubmit={submit} className="mt-4 space-y-3">
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="اسمك (اختياري)"
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none" />
+              <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم هاتفك للتواصل" type="tel" dir="ltr" minLength={6}
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none" />
+              <textarea required value={reason} onChange={(e) => setReason(e.target.value)} placeholder="ما المخالفة؟" rows={4} minLength={5} maxLength={1000}
+                className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none" />
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-border py-3 text-sm">إلغاء</button>
+                <button disabled={loading} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive py-3 text-sm font-bold text-destructive-foreground">
+                  {loading && <Loader2 className="h-4 w-4 animate-spin" />} إرسال البلاغ
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </>
   );

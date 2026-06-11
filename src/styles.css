@@ -1,7 +1,7 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import "maplibre-gl/dist/maplibre-gl.css";
+/* maplibre-gl CSS is imported in __root.tsx to avoid Tailwind v4 node_modules resolution issues */
 
 @custom-variant dark (&:is(.dark *));
 

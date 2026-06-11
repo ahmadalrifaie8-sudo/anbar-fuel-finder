@@ -21,6 +21,8 @@ function AdminPage() {
   const qc = useQueryClient();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [tab, setTab] = useState<"stations" | "complaints">("stations");
+  const [rejectTarget, setRejectTarget] = useState<{ id: string; name: string } | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -50,8 +52,11 @@ function AdminPage() {
     },
   });
 
-  const setStatus = async (id: string, status: "Active" | "Suspended" | "Pending") => {
-    const { error } = await supabase.from("stations").update({ status }).eq("id", id);
+  const setStatus = async (id: string, status: "Active" | "Suspended" | "Pending", note?: string) => {
+    const update: Record<string, unknown> = { status };
+    if (note !== undefined) update.rejection_note = note;
+    if (status === "Active") update.rejection_note = null;
+    const { error } = await supabase.from("stations").update(update).eq("id", id);
     if (error) { toast.error(error.message); return; }
     toast.success("تم"); qc.invalidateQueries({ queryKey: ["admin-stations"] });
   };
@@ -105,10 +110,11 @@ function AdminPage() {
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{s.name}</p>
                       <p className="text-[10px] text-muted-foreground">/s/{s.slug}{s.phone ? ` · ${s.phone}` : ""}</p>
+                      <p className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(s.created_at), { addSuffix: true, locale: ar })}</p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => setStatus(s.id, "Active")} className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground" aria-label="موافقة"><Check className="h-4 w-4" /></button>
-                      <button onClick={() => setStatus(s.id, "Suspended")} className="grid h-9 w-9 place-items-center rounded-xl bg-destructive/20 text-destructive" aria-label="رفض"><X className="h-4 w-4" /></button>
+                      <button onClick={() => { setRejectTarget({ id: s.id, name: s.name }); setRejectNote(""); }} className="grid h-9 w-9 place-items-center rounded-xl bg-destructive/20 text-destructive" aria-label="رفض"><X className="h-4 w-4" /></button>
                     </div>
                   </div>
                 ))}
@@ -170,6 +176,30 @@ function AdminPage() {
               );
             })}
         </section>
+      )}
+
+      {/* نافذة رفض المحطة مع ملاحظة */}
+      {rejectTarget && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setRejectTarget(null)} />
+          <div className="glass-strong fixed inset-x-4 top-1/2 z-50 mx-auto max-w-sm -translate-y-1/2 rounded-3xl p-6 md:left-1/2 md:right-auto md:-translate-x-1/2">
+            <h3 className="text-base font-bold">رفض محطة: {rejectTarget.name}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">يمكنك إضافة ملاحظة تظهر لصاحب المحطة.</p>
+            <textarea value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
+              placeholder="سبب الرفض (اختياري)" rows={3}
+              className="mt-3 w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none" />
+            <div className="mt-3 flex gap-2">
+              <button onClick={() => setRejectTarget(null)}
+                className="flex-1 rounded-xl border border-border py-2.5 text-sm">إلغاء</button>
+              <button onClick={async () => {
+                await setStatus(rejectTarget.id, "Suspended", rejectNote || undefined);
+                setRejectTarget(null);
+              }} className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-destructive py-2.5 text-sm font-bold text-destructive-foreground">
+                <X className="h-4 w-4" /> تأكيد الرفض
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </main>
   );
