@@ -103,6 +103,7 @@ function AddStationDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const { data: cities = [] } = useQuery({ queryKey: ["cities"], queryFn: fetchCities });
   const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
   const [cityId, setCityId] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
@@ -126,6 +127,7 @@ function AddStationDialog({ onClose }: { onClose: () => void }) {
         owner_id: user.id,
         city_id: cityId,
         name,
+        address,
         slug,
         location: `SRID=4326;POINT(${lng} ${lat})` as any,
         status: "Pending",
@@ -146,6 +148,8 @@ function AddStationDialog({ onClose }: { onClose: () => void }) {
         <h2 className="text-lg font-bold">إضافة محطة جديدة</h2>
         <form onSubmit={submit} className="mt-4 space-y-3">
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="اسم المحطة"
+            className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+          <input required value={address} onChange={(e) => setAddress(e.target.value)} placeholder="العنوان (مثال: شارع 20 - حي الجمعية)"
             className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
           <select required value={cityId} onChange={(e) => setCityId(e.target.value)}
             className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary">
