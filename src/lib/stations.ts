@@ -34,7 +34,8 @@ export async function fetchActiveStations(): Promise<StationWithStatus[]> {
     .from("stations_public")
     .select("id, name, slug, city_id, lat, lng, services, status");
   if (error) throw error;
-  const ids = (stations ?? []).map((s) => s.id);
+  const rows = (stations ?? []).filter((s): s is NonNullable<typeof s> & { id: string } => !!s?.id);
+  const ids = rows.map((s) => s.id as string);
   if (ids.length === 0) return [];
   const { data: statuses } = await supabase
     .from("station_fuel_status")
@@ -46,7 +47,7 @@ export async function fetchActiveStations(): Promise<StationWithStatus[]> {
     arr.push(s as FuelStatus);
     byStation.set(s.station_id, arr);
   });
-  return (stations ?? []).map((s) => ({
+  return rows.map((s) => ({
     ...(s as any),
     statuses: byStation.get(s.id) ?? [],
   }));
