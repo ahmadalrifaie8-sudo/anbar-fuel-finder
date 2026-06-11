@@ -132,8 +132,9 @@ function HomePage() {
               to="/auth"
               className="glass flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-semibold"
             >
-              <LogIn className="h-4 w-4" /> دخول المحطات
+              <LogIn className="h-4 w-4" /> صاحب محطة؟
             </Link>
+
           </div>
         </div>
         <StatsBar stations={stations} fuelTypes={fuelTypes} />

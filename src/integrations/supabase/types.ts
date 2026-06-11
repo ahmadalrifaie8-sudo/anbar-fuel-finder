@@ -41,6 +41,57 @@ export type Database = {
         }
         Relationships: []
       }
+      complaints: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          reason: string
+          reporter_name: string | null
+          reporter_phone: string
+          station_id: string
+          status: Database["public"]["Enums"]["complaint_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          reason: string
+          reporter_name?: string | null
+          reporter_phone: string
+          station_id: string
+          status?: Database["public"]["Enums"]["complaint_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          reason?: string
+          reporter_name?: string | null
+          reporter_phone?: string
+          station_id?: string
+          status?: Database["public"]["Enums"]["complaint_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fuel_types: {
         Row: {
           display_order: number
@@ -153,6 +204,57 @@ export type Database = {
           },
         ]
       }
+      station_products: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_available: boolean
+          name: string
+          notes: string | null
+          price: number | null
+          station_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_available?: boolean
+          name: string
+          notes?: string | null
+          price?: number | null
+          station_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_available?: boolean
+          name?: string
+          notes?: string | null
+          price?: number | null
+          station_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "station_products_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "station_products_station_id_fkey"
+            columns: ["station_id"]
+            isOneToOne: false
+            referencedRelation: "stations_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stations: {
         Row: {
           address: string
@@ -162,6 +264,7 @@ export type Database = {
           location: unknown
           name: string
           owner_id: string
+          phone: string | null
           services: Json
           slug: string
           status: Database["public"]["Enums"]["station_status"]
@@ -176,6 +279,7 @@ export type Database = {
           location: unknown
           name: string
           owner_id: string
+          phone?: string | null
           services?: Json
           slug: string
           status?: Database["public"]["Enums"]["station_status"]
@@ -190,6 +294,7 @@ export type Database = {
           location?: unknown
           name?: string
           owner_id?: string
+          phone?: string | null
           services?: Json
           slug?: string
           status?: Database["public"]["Enums"]["station_status"]
@@ -280,6 +385,7 @@ export type Database = {
           lat: number | null
           lng: number | null
           name: string | null
+          phone: string | null
           services: Json | null
           slug: string | null
           status: Database["public"]["Enums"]["station_status"] | null
@@ -294,6 +400,7 @@ export type Database = {
           lat?: never
           lng?: never
           name?: string | null
+          phone?: string | null
           services?: Json | null
           slug?: string | null
           status?: Database["public"]["Enums"]["station_status"] | null
@@ -308,6 +415,7 @@ export type Database = {
           lat?: never
           lng?: never
           name?: string | null
+          phone?: string | null
           services?: Json | null
           slug?: string | null
           status?: Database["public"]["Enums"]["station_status"] | null
@@ -453,6 +561,7 @@ export type Database = {
             }
             Returns: string
           }
+      arabic_to_latin: { Args: { _input: string }; Returns: string }
       disablelongtransactions: { Args: never; Returns: string }
       dropgeometrycolumn:
         | {
@@ -637,6 +746,7 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      slugify_station_name: { Args: { _name: string }; Returns: string }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -1218,6 +1328,7 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      unique_station_slug: { Args: { _name: string }; Returns: string }
       unlockrows: { Args: { "": string }; Returns: number }
       updategeometrysrid: {
         Args: {
@@ -1232,6 +1343,7 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "station_manager"
+      complaint_status: "open" | "reviewing" | "resolved" | "rejected"
       crowd_level: "خفيف" | "متوسط" | "شديد"
       station_status: "Pending" | "Active" | "Suspended"
     }
@@ -1370,6 +1482,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "station_manager"],
+      complaint_status: ["open", "reviewing", "resolved", "rejected"],
       crowd_level: ["خفيف", "متوسط", "شديد"],
       station_status: ["Pending", "Active", "Suspended"],
     },

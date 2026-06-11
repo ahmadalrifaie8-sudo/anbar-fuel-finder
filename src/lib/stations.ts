@@ -70,11 +70,32 @@ export async function fetchStationBySlug(slug: string) {
     .maybeSingle();
   if (error) throw error;
   if (!data || !(data as any).id) return null;
-  const { data: statuses } = await supabase
-    .from("station_fuel_status")
-    .select("*, fuel_types(name)")
-    .eq("station_id", (data as any).id as string);
-  return { station: data, statuses: statuses ?? [] };
+  const stationId = (data as any).id as string;
+  const [statusesRes, productsRes] = await Promise.all([
+    supabase.from("station_fuel_status").select("*, fuel_types(name)").eq("station_id", stationId),
+    supabase.from("station_products").select("*").eq("station_id", stationId).order("display_order"),
+  ]);
+  return { station: data, statuses: statusesRes.data ?? [], products: productsRes.data ?? [] };
+}
+
+export type StationProduct = {
+  id: string;
+  station_id: string;
+  name: string;
+  price: number | null;
+  is_available: boolean;
+  notes: string | null;
+  display_order: number;
+};
+
+export async function submitComplaint(input: {
+  station_id: string;
+  reporter_name?: string;
+  reporter_phone: string;
+  reason: string;
+}) {
+  const { error } = await supabase.from("complaints").insert(input);
+  if (error) throw error;
 }
 
 // عداد زيارات المحطة (دالة آمنة على الخادم)
