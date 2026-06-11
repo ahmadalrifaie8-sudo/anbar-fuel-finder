@@ -19,7 +19,13 @@ type MyStation = {
   id: string; name: string; slug: string; status: string; city_id: string;
 };
 
-type Status = { station_id: string; fuel_type_id: number; is_available: boolean; last_updated: string };
+type Status = { station_id: string; fuel_type_id: number; is_available: boolean; crowd_level: "خفيف"|"متوسط"|"شديد"; last_updated: string };
+const CROWD_LEVELS: Array<"خفيف"|"متوسط"|"شديد"> = ["خفيف", "متوسط", "شديد"];
+const CROWD_BTN: Record<string, string> = {
+  "خفيف": "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+  "متوسط": "bg-amber-500/20 text-amber-300 border-amber-500/40",
+  "شديد": "bg-red-500/20 text-red-300 border-red-500/40",
+};
 
 function Dashboard() {
   const qc = useQueryClient();
@@ -103,6 +109,7 @@ function AddStationDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const { data: cities = [] } = useQuery({ queryKey: ["cities"], queryFn: fetchCities });
   const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
   const [cityId, setCityId] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
@@ -126,6 +133,7 @@ function AddStationDialog({ onClose }: { onClose: () => void }) {
         owner_id: user.id,
         city_id: cityId,
         name,
+        address,
         slug,
         location: `SRID=4326;POINT(${lng} ${lat})` as any,
         status: "Pending",
@@ -146,6 +154,8 @@ function AddStationDialog({ onClose }: { onClose: () => void }) {
         <h2 className="text-lg font-bold">إضافة محطة جديدة</h2>
         <form onSubmit={submit} className="mt-4 space-y-3">
           <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="اسم المحطة"
+            className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
+          <input required value={address} onChange={(e) => setAddress(e.target.value)} placeholder="العنوان (مثال: شارع 20 - حي الجمعية)"
             className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" />
           <select required value={cityId} onChange={(e) => setCityId(e.target.value)}
             className="w-full rounded-xl border border-border bg-input px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary">
@@ -200,6 +210,14 @@ function StationCard({ station, onChange }: { station: MyStation; onChange: () =
     qc.invalidateQueries({ queryKey: ["station-status", station.id] });
   };
 
+  const setCrowd = async (fuelId: number, level: "خفيف"|"متوسط"|"شديد", isAvailable: boolean) => {
+    const { error } = await supabase
+      .from("station_fuel_status")
+      .upsert({ station_id: station.id, fuel_type_id: fuelId, is_available: isAvailable, crowd_level: level });
+    if (error) { toast.error(error.message); return; }
+    qc.invalidateQueries({ queryKey: ["station-status", station.id] });
+  };
+
   const killAll = async () => {
     if (!confirm("سيتم تعليم كل أنواع الوقود غير متوفرة. هل تريد المتابعة؟")) return;
     const { error } = await supabase
@@ -240,21 +258,39 @@ function StationCard({ station, onChange }: { station: MyStation; onChange: () =
               const st = statuses.find((s) => s.fuel_type_id === ft.id);
               const on = !!st?.is_available;
               return (
-                <div key={ft.id} className="flex items-center justify-between rounded-xl bg-secondary/40 p-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{ft.name}</span>
-                    {savedId === ft.id && <span className="flex items-center gap-1 text-[10px] text-primary"><Check className="h-3 w-3" /> محفوظ</span>}
-                    {st && <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(st.last_updated), { addSuffix: true, locale: ar })}</span>}
+                <div key={ft.id} className="rounded-xl bg-secondary/40 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{ft.name}</span>
+                      {savedId === ft.id && <span className="flex items-center gap-1 text-[10px] text-primary"><Check className="h-3 w-3" /> محفوظ</span>}
+                      {st && <span className="text-[10px] text-muted-foreground">{formatDistanceToNow(new Date(st.last_updated), { addSuffix: true, locale: ar })}</span>}
+                    </div>
+                    <button
+                      onClick={() => toggle(ft.id, on)}
+                      disabled={savingId === ft.id}
+                      role="switch"
+                      aria-checked={on}
+                      className={`relative h-7 w-14 shrink-0 rounded-full transition ${on ? "bg-primary shadow-[var(--shadow-glow-primary)]" : "bg-white/15"}`}
+                    >
+                      <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${on ? "right-0.5" : "right-7"}`} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => toggle(ft.id, on)}
-                    disabled={savingId === ft.id}
-                    role="switch"
-                    aria-checked={on}
-                    className={`relative h-7 w-14 shrink-0 rounded-full transition ${on ? "bg-primary shadow-[var(--shadow-glow-primary)]" : "bg-white/15"}`}
-                  >
-                    <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${on ? "right-0.5" : "right-7"}`} />
-                  </button>
+                  {/* اختيار مستوى الازدحام */}
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">الازدحام:</span>
+                    {CROWD_LEVELS.map((lvl) => {
+                      const active = (st?.crowd_level ?? "خفيف") === lvl;
+                      return (
+                        <button
+                          key={lvl}
+                          onClick={() => setCrowd(ft.id, lvl, on)}
+                          className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold transition ${active ? CROWD_BTN[lvl] : "border-border bg-transparent text-muted-foreground hover:bg-secondary/60"}`}
+                        >
+                          {lvl}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}

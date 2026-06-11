@@ -109,18 +109,21 @@ export type Database = {
       }
       station_fuel_status: {
         Row: {
+          crowd_level: Database["public"]["Enums"]["crowd_level"]
           fuel_type_id: number
           is_available: boolean
           last_updated: string
           station_id: string
         }
         Insert: {
+          crowd_level?: Database["public"]["Enums"]["crowd_level"]
           fuel_type_id: number
           is_available?: boolean
           last_updated?: string
           station_id: string
         }
         Update: {
+          crowd_level?: Database["public"]["Enums"]["crowd_level"]
           fuel_type_id?: number
           is_available?: boolean
           last_updated?: string
@@ -152,6 +155,7 @@ export type Database = {
       }
       stations: {
         Row: {
+          address: string
           city_id: string
           created_at: string
           id: string
@@ -162,8 +166,10 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["station_status"]
           updated_at: string
+          visitor_count: number
         }
         Insert: {
+          address?: string
           city_id: string
           created_at?: string
           id?: string
@@ -174,8 +180,10 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["station_status"]
           updated_at?: string
+          visitor_count?: number
         }
         Update: {
+          address?: string
           city_id?: string
           created_at?: string
           id?: string
@@ -186,6 +194,7 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["station_status"]
           updated_at?: string
+          visitor_count?: number
         }
         Relationships: [
           {
@@ -264,6 +273,7 @@ export type Database = {
       }
       stations_public: {
         Row: {
+          address: string | null
           city_id: string | null
           created_at: string | null
           id: string | null
@@ -274,8 +284,10 @@ export type Database = {
           slug: string | null
           status: Database["public"]["Enums"]["station_status"] | null
           updated_at: string | null
+          visitor_count: number | null
         }
         Insert: {
+          address?: string | null
           city_id?: string | null
           created_at?: string | null
           id?: string | null
@@ -286,8 +298,10 @@ export type Database = {
           slug?: string | null
           status?: Database["public"]["Enums"]["station_status"] | null
           updated_at?: string | null
+          visitor_count?: number | null
         }
         Update: {
+          address?: string | null
           city_id?: string | null
           created_at?: string | null
           id?: string | null
@@ -298,6 +312,7 @@ export type Database = {
           slug?: string | null
           status?: Database["public"]["Enums"]["station_status"] | null
           updated_at?: string | null
+          visitor_count?: number | null
         }
         Relationships: [
           {
@@ -576,6 +591,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_station_visits: {
+        Args: { _station_id: string }
+        Returns: number
       }
       longtransactionsenabled: { Args: never; Returns: boolean }
       populate_geometry_columns:
@@ -1213,6 +1232,7 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "station_manager"
+      crowd_level: "خفيف" | "متوسط" | "شديد"
       station_status: "Pending" | "Active" | "Suspended"
     }
     CompositeTypes: {
@@ -1350,6 +1370,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "station_manager"],
+      crowd_level: ["خفيف", "متوسط", "شديد"],
       station_status: ["Pending", "Active", "Suspended"],
     },
   },
