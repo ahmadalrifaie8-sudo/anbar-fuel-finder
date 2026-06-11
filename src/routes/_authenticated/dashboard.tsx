@@ -19,7 +19,13 @@ type MyStation = {
   id: string; name: string; slug: string; status: string; city_id: string;
 };
 
-type Status = { station_id: string; fuel_type_id: number; is_available: boolean; last_updated: string };
+type Status = { station_id: string; fuel_type_id: number; is_available: boolean; crowd_level: "خفيف"|"متوسط"|"شديد"; last_updated: string };
+const CROWD_LEVELS: Array<"خفيف"|"متوسط"|"شديد"> = ["خفيف", "متوسط", "شديد"];
+const CROWD_BTN: Record<string, string> = {
+  "خفيف": "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+  "متوسط": "bg-amber-500/20 text-amber-300 border-amber-500/40",
+  "شديد": "bg-red-500/20 text-red-300 border-red-500/40",
+};
 
 function Dashboard() {
   const qc = useQueryClient();
@@ -201,6 +207,14 @@ function StationCard({ station, onChange }: { station: MyStation; onChange: () =
     if (error) { toast.error(error.message); return; }
     setSavedId(fuelId);
     setTimeout(() => setSavedId(null), 1500);
+    qc.invalidateQueries({ queryKey: ["station-status", station.id] });
+  };
+
+  const setCrowd = async (fuelId: number, level: "خفيف"|"متوسط"|"شديد", isAvailable: boolean) => {
+    const { error } = await supabase
+      .from("station_fuel_status")
+      .upsert({ station_id: station.id, fuel_type_id: fuelId, is_available: isAvailable, crowd_level: level });
+    if (error) { toast.error(error.message); return; }
     qc.invalidateQueries({ queryKey: ["station-status", station.id] });
   };
 
